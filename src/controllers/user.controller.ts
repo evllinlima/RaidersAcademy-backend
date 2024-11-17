@@ -18,11 +18,7 @@ export const registerUser = async (
   req: Request,
   res: Response
 ): Promise<void> => {
-  const {
-    name,
-    email,
-    password,
-  }: { name: string; email: string; password: string } = req.body;
+  const { name, email, password } = req.body;
 
   try {
     // Verificar se já existe um usuário com o mesmo email
@@ -32,7 +28,7 @@ export const registerUser = async (
       return;
     }
 
-    // Gerar o salt e a senha criptografada
+    // Gera a senha criptografada
     const hashedPassword = await bcrypt.hash(password, 10);
 
     // Criar um novo usuário

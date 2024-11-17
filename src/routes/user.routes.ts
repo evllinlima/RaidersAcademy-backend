@@ -8,7 +8,7 @@ const router = express.Router();
 router.post("/register", registerUser);
 router.post("/login", loginUser);
 
-// Rotas protegidas. Utilizando o JWT para autenticação
+// Rotas protegidas
 router.put("/user/:id", authenticateToken, updateUser);
 router.delete("/user/:id", authenticateToken, deleteUser);
 router.get("/user/:id", authenticateToken, getUser);

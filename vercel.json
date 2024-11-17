@@ -13,5 +13,8 @@
       "src": "/(.*)",
       "dest": "dist/index.js"
     }
-  ]
+  ],
+  "projectSettings": {
+    "outputDirectory": "dist"
+  }
 }

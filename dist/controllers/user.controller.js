@@ -11,7 +11,7 @@ const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
 const JWT_SECRET = process.env.JWT_SECRET || "default_secret";
 // Registrar um novo usuário
 const registerUser = async (req, res) => {
-    const { name, email, password, } = req.body;
+    const { name, email, password } = req.body;
     try {
         // Verificar se já existe um usuário com o mesmo email
         const existingUser = await user_model_1.User.findOne({ email });
@@ -19,7 +19,7 @@ const registerUser = async (req, res) => {
             res.status(400).json({ message: "Email já cadastrado. Tente outro." });
             return;
         }
-        // Gerar o salt e a senha criptografada
+        // Gera a senha criptografada
         const hashedPassword = await bcryptjs_1.default.hash(password, 10);
         // Criar um novo usuário
         let user = new user_model_1.User({
