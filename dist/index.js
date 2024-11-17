@@ -37,5 +37,5 @@ app.use('/api/v1', user_routes_1.default);
 exports.default = async (req, res) => {
     return app(req, res);
 };
-// Server
+// Server outra opção de conexão
 // app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
