@@ -23,28 +23,11 @@ var __importStar = (this && this.__importStar) || function (mod) {
     return result;
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.Usuario = void 0;
+exports.Resposta = void 0;
 const mongoose_1 = __importStar(require("mongoose"));
-// Definição do esquema
-const UsuarioSchema = new mongoose_1.Schema({
-    nome: { type: String, required: true, max: 100 },
-    email: { type: String, required: true, unique: true },
-    senha: { type: String, required: true },
-    cpf: { type: String, required: true, unique: true },
-    tipo: {
-        type: String,
-        enum: ["aluno", "professor", "administrador"],
-        required: true
-    },
-    curso: {
-        type: String,
-        required: [function () { return this.tipo === "aluno"; }, "O campo curso é obrigatório para alunos."]
-    },
-    cursosProfessores: {
-        type: [String],
-        required: [function () { return this.tipo === "professor"; }, "O campo cursosProfessores é obrigatório para professores."]
-    },
-    isAdmin: { type: Boolean, default: false },
+const RespostaSchema = new mongoose_1.Schema({
+    descricao: { type: String, required: true },
+    autor: { type: mongoose_1.default.Schema.Types.ObjectId, ref: "Usuario", required: true },
+    pergunta: { type: mongoose_1.default.Schema.Types.ObjectId, ref: "Pergunta", required: true },
 });
-// Exportação do modelo
-exports.Usuario = mongoose_1.default.model("Usuario", UsuarioSchema);
+exports.Resposta = mongoose_1.default.model("Resposta", RespostaSchema);

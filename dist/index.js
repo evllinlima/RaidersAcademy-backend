@@ -8,10 +8,14 @@ const mongoose_1 = __importDefault(require("mongoose"));
 const cors_1 = __importDefault(require("cors"));
 const body_parser_1 = __importDefault(require("body-parser"));
 const user_routes_1 = __importDefault(require("./routes/user.routes"));
+const admin_routes_1 = __importDefault(require("./routes/admin.routes"));
+const perguntas_routes_1 = __importDefault(require("./routes/perguntas.routes"));
+const respostas_routes_1 = __importDefault(require("./routes/respostas.routes"));
 const dotenv_1 = __importDefault(require("dotenv"));
+const swagger_1 = require("./helpers/swagger");
 dotenv_1.default.config();
 const connectToDatabase = async () => {
-    const mongoURI = process.env.MONGODB_URI;
+    const mongoURI = process.env.MONGO_URI;
     if (!mongoURI) {
         console.error('Error: MONGODB_URI is not defined in the environment variables.');
         process.exit(1);
@@ -31,11 +35,16 @@ connectToDatabase();
 // Middleware
 app.use((0, cors_1.default)());
 app.use(body_parser_1.default.json());
-// Routes
+// Configura o Swagger
+(0, swagger_1.setupSwagger)(app);
+// Rotas
 app.use('/api/v1', user_routes_1.default);
-// Serverless
+app.use('/api/v1', admin_routes_1.default);
+app.use('/api/v1', perguntas_routes_1.default);
+app.use('/api/v1', respostas_routes_1.default);
+// Serverless para Vercel
 exports.default = async (req, res) => {
     return app(req, res);
 };
-// Server outra opção de conexão
+// Server (opção para desenvolvimento local)
 // app.listen(PORT, () => console.log(`Server running on port ${PORT}`));

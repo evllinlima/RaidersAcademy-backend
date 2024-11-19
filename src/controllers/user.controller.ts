@@ -1,123 +1,130 @@
 import { Request, Response, NextFunction } from "express";
-import { User } from "../models/user.model";
+import { Usuario } from "../models/user.model";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 
-// Importar o jwt_secret do .env
 const JWT_SECRET = process.env.JWT_SECRET || "default_secret";
 
 interface UserRequest extends Request {
   user?: {
     id: string;
     email: string;
+    tipo: "aluno" | "professor";
   };
 }
 
 // Registrar um novo usuário
-export const registerUser = async (
-  req: Request,
-  res: Response
-): Promise<void> => {
-  const { name, email, password } = req.body;
+export const registerUser = async (req: Request, res: Response): Promise<void> => {
+  const { nome, email, senha, cpf, tipo, curso } = req.body;
 
   try {
-    // Verificar se já existe um usuário com o mesmo email
-    const existingUser = await User.findOne({ email });
+    // Verificar se o email já está cadastrado
+    const existingUser = await Usuario.findOne({ email });
     if (existingUser) {
       res.status(400).json({ message: "Email já cadastrado. Tente outro." });
       return;
     }
 
-    // Gera a senha criptografada
-    const hashedPassword = await bcrypt.hash(password, 10);
+    // Criptografar a senha
+    const hashedPassword = await bcrypt.hash(senha, 10);
 
-    // Criar um novo usuário
-    let user = new User({
-      name,
+    // Criar novo usuário
+    const novoUsuario = new Usuario({
+      nome,
       email,
-      password: hashedPassword,
+      senha: hashedPassword,
+      cpf,
+      tipo,
+      curso: tipo === "aluno" ? curso : null, // Apenas alunos possuem um único curso
+      cursosProfessores: tipo === "professor" ? req.body.cursosProfessores : undefined,
     });
 
-    // Salvar o usuário no banco de dados
-    await user.save();
+    // Salvar no banco
+    const usuarioSalvo = await novoUsuario.save();
 
-    // Após o registro, redireciona para a página de perfil do usuário (ou retorna o token em uma API RESTful)
     res.status(201).json({
       message: "Usuário registrado com sucesso!",
-      userId: user._id,
-      email: user.email,
+      userId: usuarioSalvo._id,
+      email: usuarioSalvo.email,
     });
   } catch (error) {
-    console.error(error); // Log do erro para debug no servidor
+    console.error(error);
     res.status(500).json({ message: `Erro ao registrar o usuário: ${error}` });
   }
 };
 
 // Fazer login
 export const loginUser = async (req: Request, res: Response): Promise<void> => {
-  const { email, password }: { email: string; password: string } = req.body;
+  const { email, senha } = req.body;
 
   try {
-    // Encontrar o usuário com base no email
-    const user = await User.findOne({ email });
-    if (!user) {
+    // Procurar o usuário pelo email
+    const usuario = await Usuario.findOne({ email });
+    if (!usuario) {
       res.status(400).json({ message: "Email ou senha incorretos" });
       return;
     }
 
-    // Comparar a senha fornecida com a senha criptografada
-    const isMatch = await bcrypt.compare(password, user.password);
+    // Comparar senhas
+    const isMatch = await bcrypt.compare(senha, usuario.senha);
     if (!isMatch) {
       res.status(400).json({ message: "Email ou senha incorretos" });
       return;
     }
 
-    // Se o login for bem-sucedido, gera um token JWT e retorna
+    // Gerar JWT
     const token = jwt.sign(
-      { id: user._id, email: user.email },
+      { id: usuario._id, email: usuario.email, tipo: usuario.tipo },
       JWT_SECRET,
-      { expiresIn: "1h" } // O token expira em 1 hora
+      { expiresIn: "1h" }
     );
 
     res.json({ token });
   } catch (error) {
-    console.error(error); // Log do erro para debug no servidor
+    console.error(error);
     res.status(500).json({ message: `Erro ao logar: ${error}` });
   }
 };
 
-// Atualizar as informações do usuário
-export const updateUser = async (
-  req: UserRequest,
-  res: Response
-): Promise<void> => {
+// Atualizar informações do usuário
+export const updateUser = async (req: UserRequest, res: Response): Promise<void> => {
   try {
-    // Verifica se o usuário que está fazendo a requisição é o mesmo que está tentando atualizar
     if (req.user?.id !== req.params.id) {
-      res
-        .status(403)
-        .json({
-          message: "Você não tem permissão para atualizar este perfil.",
-        });
+      res.status(403).json({ message: "Você não tem permissão para atualizar este perfil." });
       return;
     }
 
-    const updatedUser = await User.findByIdAndUpdate(req.params.id, req.body, {
-      new: true,
-    });
+    const updatedUser = await Usuario.findByIdAndUpdate(req.params.id, req.body, { new: true });
 
     if (!updatedUser) {
       res.status(404).json({ message: "Usuário não encontrado" });
       return;
     }
 
-    res
-      .status(200)
-      .json({ message: "Usuário atualizado com sucesso!", user: updatedUser });
+    res.status(200).json({ message: "Usuário atualizado com sucesso!", user: updatedUser });
   } catch (error) {
-    console.error(error); // Log do erro para debug no servidor
-    res.status(500).json({ message: "Erro ao atualizar o usuário", error });
+    console.error(error);
+    res.status(500).json({ message: `Erro ao atualizar o usuário: ${error}` });
   }
+};
+
+// Middleware para autenticação
+const authenticateToken = (req: UserRequest, res: Response, next: NextFunction): void => {
+  const token = req.headers.authorization?.split(" ")[1];
+
+  if (!token) {
+    res.status(401).json({ message: "Acesso não autorizado" });
+    return;
+  }
+
+  jwt.verify(token, JWT_SECRET, (err, user) => {
+    if (err) {
+      return res.status(403).json({ message: "Token inválido" });
+    }
+
+    req.user = user as { id: string; email: string; tipo: "aluno" | "professor" };
+    next();
+  });
 };
 
 // Deletar o usuário pelo ID
@@ -134,7 +141,7 @@ export const deleteUser = async (
       return;
     }
 
-    const deletedUser = await User.findByIdAndDelete(req.params.id);
+    const deletedUser = await Usuario.findByIdAndDelete(req.params.id);
 
     if (!deletedUser) {
       res.status(404).json({ message: "Usuário não encontrado" });
@@ -164,7 +171,7 @@ export const getUser = async (
         });
     }
 
-    const user = await User.findById(req.params.id);
+    const user = await Usuario.findById(req.params.id);
     if (!user) {
       res.status(404).json({ message: "Usuário não encontrado" });
       return;
@@ -182,7 +189,7 @@ export const getPublicProfile = async (
   res: Response
 ): Promise<void> => {
   try {
-    const user = await User.findById(req.params.id).select("name"); // Seleciona apenas o nome
+    const user = await Usuario.findById(req.params.id).select("nome"); // Seleciona apenas o nome
     if (!user) {
       res.status(404).json({ message: "Usuário não encontrado" });
       return;
@@ -194,28 +201,6 @@ export const getPublicProfile = async (
       .status(500)
       .json({ message: `Erro ao carregar o perfil público: ${error}` });
   }
-};
-
-const authenticateToken = (
-  req: UserRequest,
-  res: Response,
-  next: NextFunction
-): void => {
-  const token = req.headers.authorization?.split(" ")[1]; // Pega o token do header
-
-  if (!token) {
-    res.status(401).json({ message: "Acesso não autorizado" });
-    return;
-  }
-
-  jwt.verify(token, JWT_SECRET, (err, user) => {
-    if (err) {
-      return res.status(403).json({ message: "Token inválido" });
-    }
-
-    req.user = user as { id: string; email: string }; // Salva as informações do usuário no request
-    next(); // Chama a próxima rota
-  });
 };
 
 export { authenticateToken };
