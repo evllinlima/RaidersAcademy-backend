@@ -85,7 +85,131 @@ const router = express_1.default.Router();
  *                   type: string
  *                   example: "Erro ao registrar administrador: erro desconhecido."
  */
-router.post("/admin/register", admin_controller_1.registerAdmin);
+router.post("/admin/register", autenticarAdmin_1.autenticarAdmin, admin_controller_1.registerAdmin);
+/**
+ * @swagger
+ * /admin/firstRegister:
+ *   post:
+ *     summary: Registra o primeiro administrador (sem autenticação necessária)
+ *     tags: [Admin]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - nome
+ *               - email
+ *               - senha
+ *               - cpf
+ *             properties:
+ *               nome:
+ *                 type: string
+ *                 description: O nome completo do administrador.
+ *               email:
+ *                 type: string
+ *                 description: O email do administrador.
+ *               senha:
+ *                 type: string
+ *                 description: A senha do administrador.
+ *               cpf:
+ *                 type: string
+ *                 description: O CPF do administrador.
+ *     responses:
+ *       201:
+ *         description: Administrador registrado com sucesso
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: "Administrador registrado com sucesso!"
+ *                 id:
+ *                   type: string
+ *                   example: "60d9f7b4b5f1e8c4d2d8e9d9"
+ *       400:
+ *         description: Email ou CPF já cadastrado
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: "Email ou CPF já cadastrado."
+ *       500:
+ *         description: Erro ao registrar o administrador
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: "Erro ao registrar administrador: erro desconhecido."
+ */
+router.post("/admin/firstRegister", admin_controller_1.registerAdmin);
+/**
+ * @swagger
+ * /admin/login:
+ *   post:
+ *     summary: Realiza o login do administrador e gera o token JWT
+ *     tags: [Admin]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - email
+ *               - senha
+ *             properties:
+ *               email:
+ *                 type: string
+ *                 description: O email do administrador.
+ *               senha:
+ *                 type: string
+ *                 description: A senha do administrador.
+ *     responses:
+ *       200:
+ *         description: Login bem-sucedido e token gerado
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: "Login bem-sucedido"
+ *                 token:
+ *                   type: string
+ *                   example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+ *       401:
+ *         description: Credenciais inválidas ou usuário não é administrador
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: "Credenciais inválidas ou usuário não é administrador."
+ *       500:
+ *         description: Erro ao fazer login
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: "Erro ao fazer login: erro desconhecido."
+ */
+router.post("/admin/login", admin_controller_1.loginAdmin);
 /**
  * @swagger
  * /campus:
@@ -564,7 +688,7 @@ router.post("/disciplina", autenticarAdmin_1.autenticarAdmin, disciplinas_contro
  *                   type: string
  *                   example: "Erro ao atualizar disciplina: erro desconhecido."
  */
-router.put("/disciplina:id", autenticarAdmin_1.autenticarAdmin, disciplinas_controller_1.atualizarDisciplina);
+router.put("/disciplina/:id", autenticarAdmin_1.autenticarAdmin, disciplinas_controller_1.atualizarDisciplina);
 /**
  * @swagger
  * /disciplina/{id}:
