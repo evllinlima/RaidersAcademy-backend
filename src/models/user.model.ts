@@ -1,4 +1,5 @@
 import mongoose, { Schema, Document } from "mongoose";
+import { ICurso } from "./curso.models";
 
 // Definição da interface para o usuário
 export interface IUsuario extends Document {
@@ -6,10 +7,10 @@ export interface IUsuario extends Document {
   email: string;
   senha: string;
   cpf: string;
-  tipo: "aluno" | "professor" | "administrador"; // Define os tipos permitidos
-  curso?: string; // Curso para alunos
-  cursosProfessores?: string[]; // Cursos que um professor ministra
-  isAdmin: boolean; // Indica se o usuário é um administrador
+  tipo: "aluno" | "professor" | "administrador";
+  curso?: mongoose.Types.ObjectId | ICurso;
+  cursosProfessores?: mongoose.Types.ObjectId[] | ICurso[];
+  isAdmin: boolean;
 }
 
 // Definição do esquema
@@ -24,12 +25,14 @@ const UsuarioSchema: Schema = new Schema({
     required: true 
   },
   curso: { 
-    type: String, 
-    required: [function (this: IUsuario) { return this.tipo === "aluno"; }, "O campo curso é obrigatório para alunos."] 
+    type: mongoose.Schema.Types.ObjectId, 
+    ref: "Curso", 
+    required: [function (this: IUsuario) { return this.tipo === "aluno"; }, "O campo curso é obrigatório para alunos."]
   },
   cursosProfessores: { 
-    type: [String], 
-    required: [function (this: IUsuario) { return this.tipo === "professor"; }, "O campo cursosProfessores é obrigatório para professores."] 
+    type: [mongoose.Schema.Types.ObjectId], 
+    ref: "Curso", 
+    required: [function (this: IUsuario) { return this.tipo === "professor"; }, "O campo cursosProfessores é obrigatório para professores."]
   },
   isAdmin: { type: Boolean, default: false },
 });

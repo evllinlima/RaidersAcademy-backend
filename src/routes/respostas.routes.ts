@@ -141,6 +141,6 @@ router.delete("/respostas/:id", authenticateToken, deletarResposta);
  *       500:
  *         description: Erro ao listar as respostas
  */
-router.get("/perguntas/:perguntaId/respostas", authenticateToken, listarRespostasPorPergunta);
+router.get("/perguntas/:perguntaId/respostas", listarRespostasPorPergunta);
 
 export default router;

@@ -37,11 +37,13 @@ const UsuarioSchema = new mongoose_1.Schema({
         required: true
     },
     curso: {
-        type: String,
+        type: mongoose_1.default.Schema.Types.ObjectId,
+        ref: "Curso",
         required: [function () { return this.tipo === "aluno"; }, "O campo curso é obrigatório para alunos."]
     },
     cursosProfessores: {
-        type: [String],
+        type: [mongoose_1.default.Schema.Types.ObjectId],
+        ref: "Curso",
         required: [function () { return this.tipo === "professor"; }, "O campo cursosProfessores é obrigatório para professores."]
     },
     isAdmin: { type: Boolean, default: false },

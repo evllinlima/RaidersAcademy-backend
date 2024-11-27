@@ -7,6 +7,7 @@ exports.authenticateToken = exports.getPublicProfile = exports.getUser = exports
 const user_model_1 = require("../models/user.model");
 const bcryptjs_1 = __importDefault(require("bcryptjs"));
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
+const mongoose_1 = __importDefault(require("mongoose"));
 const JWT_SECRET = process.env.JWT_SECRET || "default_secret";
 // Registrar um novo usuário
 const registerUser = async (req, res) => {
@@ -20,6 +21,11 @@ const registerUser = async (req, res) => {
         }
         // Criptografar a senha
         const hashedPassword = await bcryptjs_1.default.hash(senha, 10);
+        // Converter curso para ObjectId (se for aluno) e cursosProfessores (se for professor)
+        const cursoObjectId = tipo === "aluno" && curso ? new mongoose_1.default.Types.ObjectId(curso) : null;
+        const cursosProfessoresObjectIds = tipo === "professor" && req.body.cursosProfessores
+            ? req.body.cursosProfessores.map((id) => new mongoose_1.default.Types.ObjectId(id))
+            : undefined;
         // Criar novo usuário
         const novoUsuario = new user_model_1.Usuario({
             nome,
@@ -27,8 +33,8 @@ const registerUser = async (req, res) => {
             senha: hashedPassword,
             cpf,
             tipo,
-            curso: tipo === "aluno" ? curso : null, // Apenas alunos possuem um único curso
-            cursosProfessores: tipo === "professor" ? req.body.cursosProfessores : undefined,
+            curso: cursoObjectId,
+            cursosProfessores: cursosProfessoresObjectIds,
         });
         // Salvar no banco
         const usuarioSalvo = await novoUsuario.save();
@@ -39,7 +45,6 @@ const registerUser = async (req, res) => {
         });
     }
     catch (error) {
-        console.error(error);
         res.status(500).json({ message: `Erro ao registrar o usuário: ${error}` });
     }
 };
@@ -65,7 +70,6 @@ const loginUser = async (req, res) => {
         res.json({ token });
     }
     catch (error) {
-        console.error(error);
         res.status(500).json({ message: `Erro ao logar: ${error}` });
     }
 };
@@ -73,19 +77,34 @@ exports.loginUser = loginUser;
 // Atualizar informações do usuário
 const updateUser = async (req, res) => {
     try {
-        if (req.user?.id !== req.params.id) {
-            res.status(403).json({ message: "Você não tem permissão para atualizar este perfil." });
-            return;
-        }
-        const updatedUser = await user_model_1.Usuario.findByIdAndUpdate(req.params.id, req.body, { new: true });
-        if (!updatedUser) {
+        const userToUpdate = await user_model_1.Usuario.findById(req.params.id);
+        if (!userToUpdate) {
             res.status(404).json({ message: "Usuário não encontrado" });
             return;
         }
-        res.status(200).json({ message: "Usuário atualizado com sucesso!", user: updatedUser });
+        if (req.user?.id !== req.params.id) {
+            res.status(403).json({
+                message: "Você não tem permissão para atualizar este perfil.",
+            });
+            return;
+        }
+        // Conversão de curso e cursosProfessores para ObjectId, se necessário
+        const cursoObjectId = req.body.tipo === "aluno" && req.body.curso
+            ? new mongoose_1.default.Types.ObjectId(req.body.curso)
+            : undefined;
+        const cursosProfessoresObjectIds = req.body.tipo === "professor" && req.body.cursosProfessores
+            ? req.body.cursosProfessores.map((id) => new mongoose_1.default.Types.ObjectId(id))
+            : undefined;
+        const updatedUser = await user_model_1.Usuario.findByIdAndUpdate(req.params.id, {
+            ...req.body,
+            curso: cursoObjectId,
+            cursosProfessores: cursosProfessoresObjectIds,
+        }, { new: true });
+        res
+            .status(200)
+            .json({ message: "Usuário atualizado com sucesso!", user: updatedUser });
     }
     catch (error) {
-        console.error(error);
         res.status(500).json({ message: `Erro ao atualizar o usuário: ${error}` });
     }
 };
@@ -110,21 +129,20 @@ exports.authenticateToken = authenticateToken;
 const deleteUser = async (req, res) => {
     try {
         // Verifica se o usuário que está fazendo a requisição é o mesmo que está tentando excluir
+        const deletedUser = await user_model_1.Usuario.findByIdAndDelete(req.params.id);
+        if (!deletedUser) {
+            res.status(404).json({ message: "Usuário não encontrado" });
+            return;
+        }
         if (req.user?.id !== req.params.id) {
             res
                 .status(403)
                 .json({ message: "Você não tem permissão para excluir este perfil." });
             return;
         }
-        const deletedUser = await user_model_1.Usuario.findByIdAndDelete(req.params.id);
-        if (!deletedUser) {
-            res.status(404).json({ message: "Usuário não encontrado" });
-            return;
-        }
         res.status(200).json({ message: "Usuário deletado com sucesso!" });
     }
     catch (error) {
-        console.error(error); // Log do erro para debug no servidor
         res.status(500).json({ message: "Erro ao deletar o usuário", error });
     }
 };
@@ -132,20 +150,18 @@ exports.deleteUser = deleteUser;
 // Obter informações do usuário pelo ID
 const getUser = async (req, res) => {
     try {
-        // Verifica se o usuário que está fazendo a requisição é o mesmo que está no perfil
-        if (req.user?.id !== req.params.id) {
-            res
-                .status(403)
-                .json({
-                message: "Acesso negado. Você não pode ver o perfil de outro usuário.",
-            });
-        }
         const user = await user_model_1.Usuario.findById(req.params.id);
         if (!user) {
             res.status(404).json({ message: "Usuário não encontrado" });
             return;
         }
-        res.render("profile", { user }); // Retorna as informações do perfil
+        if (req.user?.id !== req.params.id) {
+            res.status(403).json({
+                message: "Acesso negado. Você não pode ver o perfil de outro usuário.",
+            });
+            return;
+        }
+        res.status(200).json(user); // Retorna as informações do perfil
     }
     catch (error) {
         res.status(500).json({ message: `Erro ao carregar o perfil: ${error}` });
@@ -165,7 +181,7 @@ const getPublicProfile = async (req, res) => {
     catch (error) {
         res
             .status(500)
-            .json({ message: `Erro ao carregar o perfil público: ${error}` });
+            .json({ message: `Erro ao carregar o perfil público` });
     }
 };
 exports.getPublicProfile = getPublicProfile;

@@ -3,7 +3,8 @@ import {
   criarPergunta, 
   atualizarPergunta, 
   deletarPergunta, 
-  listarPerguntasPorDisciplina 
+  listarPerguntasPorDisciplina, 
+  buscarPerguntaPorId
 } from "../controllers/perguntas.controller";
 import { authenticateToken } from "../controllers/user.controller";
 
@@ -146,5 +147,7 @@ router.delete("/perguntas/:id", authenticateToken, deletarPergunta);
  *         description: Erro ao listar perguntas
  */
 router.get("/perguntas/:disciplinaId", listarPerguntasPorDisciplina);
+
+router.get('/perguntas/:id', buscarPerguntaPorId);
 
 export default router;

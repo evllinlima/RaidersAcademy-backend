@@ -136,5 +136,5 @@ router.delete("/respostas/:id", user_controller_1.authenticateToken, respostas_c
  *       500:
  *         description: Erro ao listar as respostas
  */
-router.get("/perguntas/:perguntaId/respostas", user_controller_1.authenticateToken, respostas_controller_1.listarRespostasPorPergunta);
+router.get("/perguntas/:perguntaId/respostas", respostas_controller_1.listarRespostasPorPergunta);
 exports.default = router;

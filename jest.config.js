@@ -2,17 +2,18 @@
 module.exports = {
   testEnvironment: "node",
   transform: {
-    "^.+.tsx?$": ["ts-jest", {}],
+    "^.+\\.tsx?$": ["ts-jest", {}],
   },
-  coverageDirectory: "coverage", // diretorio dos relatorios de coverege
-  coverageReporters: ["html", "text", "lcov", "json"], //formatos de exportação dos relatorios
-  collectCoverageFrom: ["src/**/*.{ts, js}", "!src/**/*.d.ts"], // regras para inclusão/exclusão de scripts no calculo de coverrage
+  coverageDirectory: "coverage",
+  coverageReporters: ["html", "text", "lcov", "json"],
+  collectCoverageFrom: ["src/**/*.{ts,js}", "!src/**/*.d.ts"],
   coverageThreshold: {
     global: {
-      statements: 81.5, // quantidade de linhas de código que devem ser executadas
-      branches: 80, // quantidade de branches de código que devem ser executadas
-      functions: 82, // quantidade de funções que devem ser executadas
-      lines: 87, // quantidade de linhas de código que devem ser executadas
+      statements: 81.5,
+      branches: 80,
+      functions: 82,
+      lines: 87,
     },
   },
+  testPathIgnorePatterns: ["/node_modules/", "/dist/"],
 };
